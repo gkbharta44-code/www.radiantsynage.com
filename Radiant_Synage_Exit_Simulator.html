@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exit Realisation Ledger — Radiant Synage</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --ink:#0E141F;
+    --ink-2:#161F2E;
+    --ink-3:#1E2A3D;
+    --paper:#EEE7D6;
+    --paper-2:#E3DAC3;
+    --paper-ink:#2A2318;
+    --brass:#C29A5D;
+    --brass-lt:#DEB878;
+    --text-lt:#E7E1D0;
+    --text-dim:#95A0B3;
+    --pos:#5E8C6A;
+    --neg:#B25843;
+    --rule: rgba(230,224,204,0.10);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(194,154,93,0.09), transparent 60%),
+      var(--ink);
+    color:var(--text-lt);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:36px 20px 60px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  header{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    margin-bottom:34px;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:24px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:var(--brass-lt);
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:clamp(28px,4vw,42px);
+    margin:2px 0 4px;
+    letter-spacing:-0.01em;
+    color:var(--text-lt);
+  }
+  .sub{
+    color:var(--text-dim);
+    font-size:14.5px;
+    max-width:640px;
+    line-height:1.5;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns: 340px 1fr;
+    gap:24px;
+  }
+  @media (max-width: 880px){ .grid{grid-template-columns:1fr;} }
+
+  /* ---- Control panel (dial board) ---- */
+  .panel{
+    background:linear-gradient(180deg, var(--ink-2), var(--ink-3));
+    border:1px solid var(--rule);
+    border-radius:10px;
+    padding:22px 20px 26px;
+    height:fit-content;
+    position:relative;
+  }
+  .panel::before{
+    content:"CONTROL BOARD";
+    position:absolute; top:-9px; left:16px;
+    background:var(--ink);
+    padding:0 8px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.14em;
+    color:var(--brass);
+  }
+  .field{ margin-bottom:20px; }
+  .field:last-child{ margin-bottom:0; }
+  .field-label{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-size:12.5px; color:var(--text-dim); margin-bottom:8px;
+    font-family:'Inter',sans-serif;
+  }
+  .field-label span.val{
+    font-family:'IBM Plex Mono',monospace;
+    color:var(--brass-lt);
+    font-size:13px;
+    font-weight:600;
+  }
+  input[type=range]{
+    -webkit-appearance:none;
+    width:100%;
+    height:6px;
+    border-radius:3px;
+    background:
+      repeating-linear-gradient(90deg, var(--rule) 0 1px, transparent 1px 10%),
+      #2A3547;
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:16px; height:16px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--brass-lt), var(--brass) 70%);
+    border:2px solid #14100A;
+    cursor:pointer;
+    box-shadow:0 0 0 3px rgba(194,154,93,0.15);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:16px; height:16px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--brass-lt), var(--brass) 70%);
+    border:2px solid #14100A; cursor:pointer;
+  }
+
+  .toggle-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 0;
+    border-top:1px dashed var(--rule);
+  }
+  .toggle-row:first-of-type{ border-top:none; }
+  .toggle-label{ font-size:13px; color:var(--text-lt); }
+  .toggle-sub{ font-size:11px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; }
+  .switch{
+    position:relative; width:38px; height:20px; flex-shrink:0;
+  }
+  .switch input{ opacity:0; width:0; height:0; }
+  .slider-toggle{
+    position:absolute; cursor:pointer; inset:0;
+    background:#2A3547; border-radius:20px; transition:.2s;
+  }
+  .slider-toggle::before{
+    content:""; position:absolute; height:14px; width:14px; left:3px; top:3px;
+    background:var(--text-dim); border-radius:50%; transition:.2s;
+  }
+  .switch input:checked + .slider-toggle{ background:rgba(194,154,93,0.35); }
+  .switch input:checked + .slider-toggle::before{ background:var(--brass-lt); transform:translateX(18px); }
+
+  .exit-select{
+    display:flex; gap:6px; margin-top:6px;
+  }
+  .exit-btn{
+    flex:1; padding:8px 0; text-align:center;
+    font-family:'IBM Plex Mono',monospace; font-size:12.5px;
+    background:#1B2536; border:1px solid var(--rule); border-radius:6px;
+    color:var(--text-dim); cursor:pointer; transition:.15s;
+  }
+  .exit-btn:hover{ border-color:var(--brass); color:var(--text-lt); }
+  .exit-btn.active{
+    background:var(--brass); border-color:var(--brass); color:#1A1204; font-weight:600;
+  }
+
+  /* ---- Right column ---- */
+  .headline{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:14px;
+    margin-bottom:20px;
+  }
+  @media (max-width:700px){ .headline{grid-template-columns:repeat(2,1fr);} }
+  .stat{
+    background:var(--ink-2);
+    border:1px solid var(--rule);
+    border-radius:10px;
+    padding:16px 16px 14px;
+  }
+  .stat-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--text-dim); margin-bottom:8px;
+  }
+  .stat-value{
+    font-family:'Fraunces',serif; font-weight:600;
+    font-size:28px; color:var(--text-lt); line-height:1;
+  }
+  .stat-value.accent{ color:var(--brass-lt); }
+  .stat-foot{ font-size:11.5px; color:var(--text-dim); margin-top:6px; font-family:'IBM Plex Mono',monospace;}
+
+  /* Ledger table */
+  .ledger{
+    background:var(--paper);
+    color:var(--paper-ink);
+    border-radius:10px;
+    padding:22px 20px 8px;
+    margin-bottom:20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    position:relative;
+    overflow:hidden;
+  }
+  .ledger::before{
+    content:"";
+    position:absolute; inset:0;
+    background: repeating-linear-gradient(180deg, transparent 0 41px, rgba(42,35,24,0.06) 41px 42px);
+    pointer-events:none;
+  }
+  .ledger-title{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px; letter-spacing:0.12em; text-transform:uppercase;
+    color:#6B5B3D; margin-bottom:10px;
+  }
+  table{ width:100%; border-collapse:collapse; font-family:'IBM Plex Mono',monospace; font-size:12.8px; position:relative; }
+  th{
+    text-align:right; font-weight:600; color:#6B5B3D;
+    font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase;
+    padding:6px 8px 10px; border-bottom:1.5px solid rgba(42,35,24,0.35);
+  }
+  th:first-child, td:first-child{ text-align:left; }
+  td{ text-align:right; padding:9px 8px; border-bottom:1px solid rgba(42,35,24,0.12); }
+  tr.exit-row td{ background:rgba(194,154,93,0.22); font-weight:600; }
+  tr.exit-row td:first-child{ position:relative; }
+  tr.exit-row td:first-child::before{
+    content:"◆"; color:var(--brass); font-size:9px; margin-right:6px;
+  }
+  .delta-pos{ color:var(--pos); }
+  .delta-neg{ color:var(--neg); }
+
+  /* Chart */
+  .chart-card{
+    background:var(--ink-2);
+    border:1px solid var(--rule);
+    border-radius:10px;
+    padding:20px 20px 10px;
+  }
+  .chart-title{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px;
+    letter-spacing:0.1em; text-transform:uppercase; color:var(--text-dim);
+    margin-bottom:12px;
+  }
+  .legend{ display:flex; gap:18px; margin-bottom:10px; font-size:11.5px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace;}
+  .legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+
+  footer{
+    margin-top:26px; font-size:11.5px; color:var(--text-dim); line-height:1.6;
+    border-top:1px solid var(--rule); padding-top:16px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Investor Realisation Model — Working Draft</div>
+    <h1>Exit Realisation Ledger</h1>
+    <div class="sub">Radiant Synage · ₹150 Cr for 49% at ₹306.12 Cr post-money. Flex the dials to see how growth deceleration, margin expansion, multiple compression and follow-on dilution move MOIC and IRR at each exit year.</div>
+  </header>
+
+  <div class="grid">
+    <!-- CONTROLS -->
+    <div class="panel">
+
+      <div class="field">
+        <div class="field-label">Year 1 growth rate <span class="val" id="v-g1">100%</span></div>
+        <input type="range" id="g1" min="20" max="150" step="5" value="100">
+      </div>
+
+      <div class="field">
+        <div class="field-label">Deceleration / year <span class="val" id="v-decel">20 pp</span></div>
+        <input type="range" id="decel" min="0" max="40" step="5" value="20">
+      </div>
+
+      <div class="field">
+        <div class="field-label">Entry EBITDA margin <span class="val" id="v-m0">8.0%</span></div>
+        <input type="range" id="m0" min="4" max="15" step="0.5" value="8">
+      </div>
+
+      <div class="field">
+        <div class="field-label">Margin expansion / year <span class="val" id="v-mstep">+0.5 pt</span></div>
+        <input type="range" id="mstep" min="0" max="2" step="0.25" value="0.5">
+      </div>
+
+      <div class="field">
+        <div class="field-label">Year 1 exit multiple <span class="val" id="v-mult1">35.0x</span></div>
+        <input type="range" id="mult1" min="15" max="40" step="0.5" value="35">
+      </div>
+
+      <div class="field">
+        <div class="field-label">Multiple compression / year <span class="val" id="v-multc">5.0x</span></div>
+        <input type="range" id="multc" min="0" max="10" step="0.5" value="5">
+      </div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Follow-on round — Year 2</div>
+          <div class="toggle-sub" id="v-d2">15% dilution</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="d2on" checked><span class="slider-toggle"></span></label>
+      </div>
+      <input type="range" id="d2" min="0" max="30" step="1" value="15" style="margin-top:2px;">
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Follow-on round — Year 4</div>
+          <div class="toggle-sub" id="v-d4">12% dilution</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="d4on" checked><span class="slider-toggle"></span></label>
+      </div>
+      <input type="range" id="d4" min="0" max="30" step="1" value="12" style="margin-top:2px;">
+
+      <div class="field" style="margin-top:22px;">
+        <div class="field-label">Exit at year</div>
+        <div class="exit-select" id="exitSelect">
+          <div class="exit-btn" data-y="1">Y1</div>
+          <div class="exit-btn" data-y="2">Y2</div>
+          <div class="exit-btn" data-y="3">Y3</div>
+          <div class="exit-btn" data-y="4">Y4</div>
+          <div class="exit-btn active" data-y="5">Y5</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div>
+      <div class="headline">
+        <div class="stat">
+          <div class="stat-label">Exit Value</div>
+          <div class="stat-value" id="h-exit">—</div>
+          <div class="stat-foot" id="h-exit-f">Cr, at selected year</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Investor Value</div>
+          <div class="stat-value accent" id="h-inv">—</div>
+          <div class="stat-foot" id="h-inv-f">Cr, at selected year</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">MOIC</div>
+          <div class="stat-value" id="h-moic">—</div>
+          <div class="stat-foot">on ₹150 Cr invested</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">IRR</div>
+          <div class="stat-value" id="h-irr">—</div>
+          <div class="stat-foot">annualised</div>
+        </div>
+      </div>
+
+      <div class="ledger">
+        <div class="ledger-title">Year-by-Year Ledger</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Year</th><th>Growth</th><th>Revenue</th><th>Margin</th><th>EBITDA</th>
+              <th>Multiple</th><th>Exit Value</th><th>Stake</th><th>Investor Value</th><th>MOIC</th><th>IRR</th>
+            </tr>
+          </thead>
+          <tbody id="ledgerBody"></tbody>
+        </table>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Investor Value &amp; MOIC Trajectory</div>
+        <div class="legend">
+          <span><span class="dot" style="background:#C29A5D"></span>Investor Value (₹ Cr)</span>
+          <span><span class="dot" style="background:#5E8C6A"></span>MOIC (x)</span>
+        </div>
+        <svg id="chart" width="100%" height="230" viewBox="0 0 1000 230" preserveAspectRatio="none"></svg>
+      </div>
+
+      <footer>
+        Model assumptions: entry ₹150 Cr for 49% stake at ₹306.12 Cr post-money on a ₹100 Cr revenue base. Growth decays linearly toward a 15% floor; EBITDA margin expands linearly toward a 16% cap; exit multiple compresses linearly toward an 8x floor. Follow-on dilution is applied once in the year it triggers and compounds forward. IRR = MOIC^(1/years) − 1. For illustration only — not investment advice.
+      </footer>
+    </div>
+  </div>
+</div>
+
+<script>
+const els = {
+  g1: document.getElementById('g1'), decel: document.getElementById('decel'),
+  m0: document.getElementById('m0'), mstep: document.getElementById('mstep'),
+  mult1: document.getElementById('mult1'), multc: document.getElementById('multc'),
+  d2: document.getElementById('d2'), d2on: document.getElementById('d2on'),
+  d4: document.getElementById('d4'), d4on: document.getElementById('d4on'),
+};
+let exitYear = 5;
+
+const fmtCr = n => n.toLocaleString('en-IN', {maximumFractionDigits:1});
+const fmtPct = n => n.toFixed(1) + '%';
+
+function compute(){
+  const g1 = +els.g1.value, decel = +els.decel.value;
+  const m0 = +els.m0.value, mstep = +els.mstep.value;
+  const mult1 = +els.mult1.value, multc = +els.multc.value;
+  const d2 = els.d2on.checked ? +els.d2.value : 0;
+  const d4 = els.d4on.checked ? +els.d4.value : 0;
+
+  const R0 = 100, ENTRY = 150, STAKE0 = 49;
+  let revenue = R0, stake = STAKE0;
+  const rows = [];
+
+  for(let y=1; y<=5; y++){
+    const growth = Math.max(15, g1 - decel*(y-1));
+    revenue = revenue * (1 + growth/100);
+    const margin = Math.min(16, m0 + mstep*(y-1));
+    const ebitda = revenue * margin/100;
+    const multiple = Math.max(8, mult1 - multc*(y-1));
+    const exitValue = ebitda * multiple;
+
+    if(y === 2 && d2 > 0) stake = stake * (1 - d2/100);
+    if(y === 4 && d4 > 0) stake = stake * (1 - d4/100);
+
+    const investorValue = exitValue * stake/100;
+    const moic = investorValue / ENTRY;
+    const irr = (Math.pow(moic, 1/y) - 1) * 100;
+
+    rows.push({y, growth, revenue, margin, ebitda, multiple, exitValue, stake, investorValue, moic, irr});
+  }
+  return rows;
+}
+
+function render(){
+  els_update_labels();
+  const rows = compute();
+
+  // headline
+  const sel = rows[exitYear-1];
+  document.getElementById('h-exit').textContent = '₹' + fmtCr(sel.exitValue) + ' Cr';
+  document.getElementById('h-inv').textContent = '₹' + fmtCr(sel.investorValue) + ' Cr';
+  document.getElementById('h-moic').textContent = sel.moic.toFixed(1) + 'x';
+  document.getElementById('h-irr').textContent = fmtPct(sel.irr);
+
+  // ledger
+  const body = document.getElementById('ledgerBody');
+  body.innerHTML = rows.map(r => `
+    <tr class="${r.y===exitYear ? 'exit-row':''}">
+      <td>Year ${r.y}</td>
+      <td>${r.growth.toFixed(0)}%</td>
+      <td>₹${fmtCr(r.revenue)} Cr</td>
+      <td>${fmtPct(r.margin)}</td>
+      <td>₹${fmtCr(r.ebitda)} Cr</td>
+      <td>${r.multiple.toFixed(1)}x</td>
+      <td>₹${fmtCr(r.exitValue)} Cr</td>
+      <td>${fmtPct(r.stake)}</td>
+      <td>₹${fmtCr(r.investorValue)} Cr</td>
+      <td>${r.moic.toFixed(1)}x</td>
+      <td>${fmtPct(r.irr)}</td>
+    </tr>
+  `).join('');
+
+  drawChart(rows);
+}
+
+function els_update_labels(){
+  document.getElementById('v-g1').textContent = els.g1.value + '%';
+  document.getElementById('v-decel').textContent = els.decel.value + ' pp';
+  document.getElementById('v-m0').textContent = (+els.m0.value).toFixed(1) + '%';
+  document.getElementById('v-mstep').textContent = '+' + (+els.mstep.value).toFixed(2) + ' pt';
+  document.getElementById('v-mult1').textContent = (+els.mult1.value).toFixed(1) + 'x';
+  document.getElementById('v-multc').textContent = (+els.multc.value).toFixed(1) + 'x';
+  document.getElementById('v-d2').textContent = els.d2.value + '% dilution';
+  document.getElementById('v-d4').textContent = els.d4.value + '% dilution';
+}
+
+function drawChart(rows){
+  const svg = document.getElementById('chart');
+  const W = 1000, H = 230, padL = 46, padR = 46, padT = 16, padB = 28;
+  const maxInv = Math.max(...rows.map(r=>r.investorValue)) * 1.15;
+  const maxMoic = Math.max(...rows.map(r=>r.moic)) * 1.15;
+
+  const x = i => padL + (W - padL - padR) * (i/(rows.length-1));
+  const yInv = v => H - padB - (H - padT - padB) * (v/maxInv);
+  const yMoic = v => H - padB - (H - padT - padB) * (v/maxMoic);
+
+  let grid = '';
+  for(let i=0;i<=4;i++){
+    const gy = padT + (H-padT-padB)*i/4;
+    grid += `<line x1="${padL}" y1="${gy}" x2="${W-padR}" y2="${gy}" stroke="rgba(230,224,204,0.07)" stroke-width="1"/>`;
+  }
+
+  let invPath = '', moicPath = '';
+  rows.forEach((r,i)=>{
+    const px = x(i);
+    invPath += (i===0?'M':'L') + px + ',' + yInv(r.investorValue) + ' ';
+    moicPath += (i===0?'M':'L') + px + ',' + yMoic(r.moic) + ' ';
+  });
+
+  let dots = '', labels = '';
+  rows.forEach((r,i)=>{
+    const px = x(i);
+    const isSel = r.y === exitYear;
+    dots += `<circle cx="${px}" cy="${yInv(r.investorValue)}" r="${isSel?5:3.5}" fill="#C29A5D" stroke="#0E141F" stroke-width="${isSel?2:1}"/>`;
+    dots += `<circle cx="${px}" cy="${yMoic(r.moic)}" r="${isSel?5:3.5}" fill="#5E8C6A" stroke="#0E141F" stroke-width="${isSel?2:1}"/>`;
+    labels += `<text x="${px}" y="${H-8}" fill="#95A0B3" font-size="11" font-family="IBM Plex Mono, monospace" text-anchor="middle">Y${r.y}</text>`;
+  });
+
+  svg.innerHTML = grid +
+    `<path d="${invPath}" fill="none" stroke="#C29A5D" stroke-width="2.2"/>` +
+    `<path d="${moicPath}" fill="none" stroke="#5E8C6A" stroke-width="2.2" stroke-dasharray="4 3"/>` +
+    dots + labels;
+}
+
+Object.values(els).forEach(el => el.addEventListener('input', render));
+document.getElementById('exitSelect').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.exit-btn');
+  if(!btn) return;
+  exitYear = +btn.dataset.y;
+  document.querySelectorAll('.exit-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
